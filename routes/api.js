@@ -74,4 +74,44 @@ router.delete('/data/:id', async (req, res) => {
   }
 });
 
+const multer = require('multer');
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
+const { detectFromImageUrl, detectFromBase64, DEFAULT_MODEL } = require('../services/qwenVision');
+
+// @route   POST /api/vision/detect-url
+// @desc    Detect objects or analyze image using public URL
+router.post('/vision/detect-url', async (req, res) => {
+  try {
+    const { imageUrl, prompt } = req.body;
+    if (!imageUrl) {
+      return res.status(400).json({ success: false, error: 'imageUrl is required in body' });
+    }
+
+    const data = await detectFromImageUrl(imageUrl, prompt);
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// @route   POST /api/vision/detect-upload
+// @desc    Upload an image file directly (multipart/form-data) and detect objects
+router.post('/vision/detect-upload', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No image file uploaded (field name must be "image")' });
+    }
+
+    const prompt = req.body.prompt;
+    const data = await detectFromBase64(req.file.buffer, req.file.mimetype, prompt);
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;
+

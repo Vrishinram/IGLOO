@@ -31,6 +31,7 @@
 
 - **Backend:** Node.js & Express.js
 - **Database:** MongoDB Atlas (Mongoose ODM)
+- **AI / Vision:** Qwen 2.5-VL via OpenRouter (`qwen/qwen-2.5-vl-72b-instruct`)
 - **Frontend:** *(To be configured)*
 
 ---
@@ -44,20 +45,26 @@ cd GLUE
 npm install
 ```
 
-### 2. Configure Environment & Database
+### 2. Configure Environment & API Keys
 Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
-Add your shared team `MONGODB_URI` inside `.env`. Then test the database connection:
+Add your shared `MONGODB_URI` and `OPENROUTER_API_KEY` inside `.env`.
+
+Test database & vision capabilities:
 ```bash
-npm run test-db
+npm run test-db       # Verifies MongoDB Atlas
+npm run test-vision   # Verifies Qwen Vision Object Detection
 ```
+
 Start the development server:
 ```bash
 npm run dev
 ```
-Visit health check at `http://localhost:5000/api/health`.
+- Health check: `http://localhost:5000/api/health`
+- Detect image by URL: `POST http://localhost:5000/api/vision/detect-url`
+- Detect image by Upload: `POST http://localhost:5000/api/vision/detect-upload`
 
 ### 3. Check out your own branch before making changes
 Never push directly to `main`! Always work on a feature branch:
