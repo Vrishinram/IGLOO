@@ -1,6 +1,5 @@
 const OpenAI = require('openai');
 
-// Initialize OpenAI client pointing to OpenRouter
 function getClient() {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
@@ -17,8 +16,42 @@ function getClient() {
   });
 }
 
-// Default model: Qwen 2.5 VL 72B Instruct (or free variant if available)
-const DEFAULT_MODEL = process.env.QWEN_MODEL || 'qwen/qwen-2.5-vl-72b-instruct:free';
+// Fallback pool of multimodal vision models
+const MODEL_FALLBACKS = [
+  process.env.VISION_MODEL,
+  process.env.QWEN_MODEL,
+  'minimax/minimax-m3:free',
+  'google/gemma-4-26b-a4b-it:free'
+].filter(Boolean);
+
+/**
+ * Execute completion with automatic fallback on rate limit (429) or endpoint errors
+ */
+async function createVisionCompletion(messages, maxTokens = 1000) {
+  const openai = getClient();
+  let lastError = null;
+
+  for (const model of MODEL_FALLBACKS) {
+    try {
+      const response = await openai.chat.completions.create({
+        model: model,
+        messages: messages,
+        max_tokens: maxTokens
+      });
+
+      return {
+        model: response.model || model,
+        result: response.choices[0].message.content,
+        usage: response.usage
+      };
+    } catch (err) {
+      lastError = err;
+      console.warn(`⚠️ Model ${model} returned error (${err.status || err.message}). Trying fallback...`);
+    }
+  }
+
+  throw lastError || new Error('All vision models failed to respond.');
+}
 
 /**
  * Detect objects or analyze image from an image URL
@@ -26,35 +59,17 @@ const DEFAULT_MODEL = process.env.QWEN_MODEL || 'qwen/qwen-2.5-vl-72b-instruct:f
  * @param {string} userPrompt - Custom instructions / query about the image
  */
 async function detectFromImageUrl(imageUrl, userPrompt = 'Detect and list all visible objects, text, and key details in this image.') {
-  const openai = getClient();
+  const messages = [
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: userPrompt },
+        { type: 'image_url', image_url: { url: imageUrl } }
+      ]
+    }
+  ];
 
-  const response = await openai.chat.completions.create({
-    model: DEFAULT_MODEL,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: userPrompt
-          },
-          {
-            type: 'image_url',
-            image_url: {
-              url: imageUrl
-            }
-          }
-        ]
-      }
-    ],
-    max_tokens: 1000
-  });
-
-  return {
-    model: response.model,
-    result: response.choices[0].message.content,
-    usage: response.usage
-  };
+  return createVisionCompletion(messages);
 }
 
 /**
@@ -64,49 +79,30 @@ async function detectFromImageUrl(imageUrl, userPrompt = 'Detect and list all vi
  * @param {string} userPrompt - Custom query
  */
 async function detectFromBase64(imageBufferOrBase64, mimeType = 'image/jpeg', userPrompt = 'Detect and list all visible objects, text, and key details in this image.') {
-  const openai = getClient();
-
   let base64String = imageBufferOrBase64;
   if (Buffer.isBuffer(imageBufferOrBase64)) {
     base64String = imageBufferOrBase64.toString('base64');
   } else if (base64String.startsWith('data:')) {
-    // Strip data URL prefix if already present
     base64String = base64String.split(',')[1];
   }
 
   const dataUri = `data:${mimeType};base64,${base64String}`;
 
-  const response = await openai.chat.completions.create({
-    model: DEFAULT_MODEL,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: userPrompt
-          },
-          {
-            type: 'image_url',
-            image_url: {
-              url: dataUri
-            }
-          }
-        ]
-      }
-    ],
-    max_tokens: 1000
-  });
+  const messages = [
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: userPrompt },
+        { type: 'image_url', image_url: { url: dataUri } }
+      ]
+    }
+  ];
 
-  return {
-    model: response.model,
-    result: response.choices[0].message.content,
-    usage: response.usage
-  };
+  return createVisionCompletion(messages);
 }
 
 module.exports = {
   detectFromImageUrl,
   detectFromBase64,
-  DEFAULT_MODEL
+  MODEL_FALLBACKS
 };
