@@ -29,21 +29,37 @@
 
 ## 🛠️ Tech Stack
 
-- **Frontend:** *(e.g., React / Next.js / HTML & CSS)*
-- **Backend:** *(e.g., Node.js / FastAPI / Flask)*
-- **Database / AI Services:** *(e.g., PostgreSQL / Gemini API)*
+- **Backend:** Node.js & Express.js
+- **Database:** MongoDB Atlas (Mongoose ODM)
+- **Frontend:** *(To be configured)*
 
 ---
 
 ## 🚀 Quick Start for Team Members
 
-### 1. Clone the repository
+### 1. Clone the repository & install dependencies
 ```bash
 git clone https://github.com/Vrishinram/GLUE.git
 cd GLUE
+npm install
 ```
 
-### 2. Check out your own branch before making changes
+### 2. Configure Environment & Database
+Copy `.env.example` to `.env`:
+```bash
+cp .env.example .env
+```
+Add your shared team `MONGODB_URI` inside `.env`. Then test the database connection:
+```bash
+npm run test-db
+```
+Start the development server:
+```bash
+npm run dev
+```
+Visit health check at `http://localhost:5000/api/health`.
+
+### 3. Check out your own branch before making changes
 Never push directly to `main`! Always work on a feature branch:
 ```bash
 # Update local main
