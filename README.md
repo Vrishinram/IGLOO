@@ -35,7 +35,7 @@ A modern **Progressive Web App (PWA)** for housing society management, featuring
 | Technician | Kumar (Electrician) | Assigned task management |
 
 ### ⚡ One-Click Demo Access
-Instant login as any role — no signup required. Perfect for hackathon evaluation.
+Instant login as any role — no signup required.
 
 ---
 
@@ -47,7 +47,7 @@ Instant login as any role — no signup required. Perfect for hackathon evaluati
 | Styling | Tailwind CSS (Dark Emerald Theme) |
 | Backend | Node.js + Express.js |
 | Database | MongoDB Atlas (M0 Free Tier) |
-| AI Primary | Google AI Studio (Gemini 2.0 Flash) |
+| AI Primary | Google AI Studio (Gemini 2.5 Flash) |
 | AI Fallback | OpenRouter (Gemma 4 26B) |
 | Auth | JWT + RBAC |
 | PWA | Web App Manifest + Service Worker |
@@ -135,6 +135,3 @@ igloo-pwa/
 - **2 Society Notices**
 
 ---
-
-## 📄 License
-Built with ❤️ for AppBlitz Buildathon 2026
