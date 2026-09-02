@@ -64,4 +64,12 @@ if (require.main === module) {
   });
 }
 
+// Export the express app for Vercel serverless functions
 module.exports = app;
+// Only listen when executed directly (local development)
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`Server running locally on port ${PORT}`);
+  });
+}
