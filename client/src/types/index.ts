@@ -17,6 +17,8 @@ export interface Unit {
   monthlyMaintenanceFee: number;
   currentDueStatus: 'PAID' | 'PENDING' | 'OVERDUE';
   lastPaidDate: string | null;
+  totalDue?: number;
+  hasPendingCharges?: boolean;
 }
 
 export interface MaintenanceTicket {

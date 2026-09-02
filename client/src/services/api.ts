@@ -49,7 +49,7 @@ export const getUnitLedger = (unitNumber: string) => api.get<{
   pendingItems: any[]; 
   totalPendingAmount: number;
 }>(`/treasury/unit-ledger/${unitNumber}`);
-export const payDues = (unitNumber: string, amount: number) => api.post<{success: boolean}>('/treasury/pay-dues', { unitNumber, amount });
+export const payDues = (unitNumber: string, amount?: number, chargeId?: string, description?: string) => api.post<{success: boolean; message: string; transaction: any; unit: any}>('/treasury/pay-dues', { unitNumber, amount, chargeId, description });
 export const getUnitStatus = () => api.get<{success: boolean; units: Unit[]}>('/treasury/unit-status');
 
 // Visitors

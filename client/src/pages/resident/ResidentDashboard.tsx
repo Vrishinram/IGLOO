@@ -40,7 +40,7 @@ const ResidentDashboard = () => {
   }, [user]);
 
   const activeTickets = tickets.filter(t => !['RESOLVED', 'CLOSED'].includes(t.status));
-  const pendingDues = unit?.currentDueStatus !== 'PAID' ? unit?.monthlyMaintenanceFee || 0 : 0;
+  const pendingDues = unit?.totalDue !== undefined ? unit.totalDue : (unit?.currentDueStatus !== 'PAID' ? unit?.monthlyMaintenanceFee || 0 : 0);
   const recentVisitors = visitors.filter(v => ['PRE_APPROVED', 'INSIDE'].includes(v.status));
 
   if (loading) return <div className="p-8 text-center text-slate-500 font-medium">Loading dashboard...</div>;
