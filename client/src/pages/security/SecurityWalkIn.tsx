@@ -34,9 +34,10 @@ const SecurityWalkIn = () => {
       setTimeout(() => {
         navigate('/security/live-log');
       }, 2000);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('Failed to register walk-in');
+      const msg = err.response?.data?.message || err.message || 'Failed to register walk-in';
+      alert(msg);
       setLoading(false);
     }
   };

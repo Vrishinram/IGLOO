@@ -1,4 +1,5 @@
 const VisitorPass = require('../models/VisitorPass');
+const User = require('../models/User');
 
 const getPasses = async (req, res, next) => {
   try {
@@ -6,7 +7,7 @@ const getPasses = async (req, res, next) => {
     if (req.user.role === 'RESIDENT') {
       query.hostUserId = req.user.userId;
     } else if (req.user.role === 'SECURITY' || req.user.role === 'ADMIN') {
-      query.status = { $in: ['PRE_APPROVED', 'INSIDE'] };
+      query.status = { $in: ['PRE_APPROVED', 'INSIDE', 'COMPLETED'] };
     }
     
     const passes = await VisitorPass.find(query).sort({ expectedDate: -1 }).populate('hostUserId', 'name unitNumber');
@@ -18,20 +19,33 @@ const getPasses = async (req, res, next) => {
 
 const createPass = async (req, res, next) => {
   try {
-    const { visitorName, visitorPhone, purpose, vehicleNumber, expectedDate } = req.body;
+    const { visitorName, visitorPhone, purpose, vehicleNumber, expectedDate, unitNumber } = req.body;
     
+    const targetUnit = unitNumber || req.user.unitNumber;
+    if (!targetUnit) {
+      return res.status(400).json({ success: false, message: 'Please select a host unit number.' });
+    }
+
+    let hostId = req.user.userId;
+    if (req.user.role === 'SECURITY' || req.user.role === 'ADMIN') {
+      const resident = await User.findOne({ unitNumber: targetUnit, role: 'RESIDENT' });
+      if (resident) {
+        hostId = resident._id;
+      }
+    }
+
     const randomCode = Math.floor(1000 + Math.random() * 9000);
     const passCode = `IG-${randomCode}`;
     
     const pass = new VisitorPass({
       passCode,
-      unitNumber: req.user.unitNumber,
-      hostUserId: req.user.userId,
+      unitNumber: targetUnit,
+      hostUserId: hostId,
       visitorName,
       visitorPhone,
-      purpose,
-      vehicleNumber,
-      expectedDate
+      purpose: purpose || 'GUEST',
+      vehicleNumber: vehicleNumber || '',
+      expectedDate: expectedDate || new Date()
     });
     
     await pass.save();
