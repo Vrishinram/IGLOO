@@ -236,8 +236,8 @@ const AdminTreasury = () => {
         </div>
       )}
 
-      {/* 3 Main Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* 4 Main Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card p-6 bg-white border-slate-200 shadow-sm flex flex-col justify-center">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-blue-50 rounded-lg"><Wallet className="w-5 h-5 text-blue-600" /></div>
@@ -258,6 +258,15 @@ const AdminTreasury = () => {
             <p className="text-rose-700 font-bold">Monthly Outflow</p>
           </div>
           <h3 className="text-3xl font-black text-rose-700">₹{summary?.monthlyOutflow.toLocaleString()}</h3>
+        </div>
+        <div className="card p-6 bg-emerald-50 border-emerald-200 shadow-sm flex flex-col justify-center">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-emerald-200/60 rounded-lg"><ArrowUpRight className="w-5 h-5 text-emerald-800" /></div>
+            <p className="text-emerald-800 font-bold">Monthly Net Profit</p>
+          </div>
+          <h3 className="text-3xl font-black text-emerald-800">
+            +₹{summary ? Math.max(0, summary.monthlyInflow - summary.monthlyOutflow).toLocaleString() : '0'}
+          </h3>
         </div>
       </div>
 

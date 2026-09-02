@@ -9,11 +9,11 @@ const TreasuryTransaction = require('../models/TreasuryTransaction');
 const VisitorPass = require('../models/VisitorPass');
 const SocietyNotice = require('../models/SocietyNotice');
 
+const connectDB = require('../config/db');
+
 const seedDatabase = async () => {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI);
-    }
+    await connectDB();
 
     console.log('Clearing database...');
     // Drop all collections to clear stale indexes from prior runs
@@ -59,17 +59,40 @@ const seedDatabase = async () => {
     ]);
 
     console.log('Seeding Treasury Transactions...');
+    const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const thisMonth = new Date();
+
     await TreasuryTransaction.insertMany([
-      { transactionType: 'INFLOW', category: 'MAINTENANCE_DUE', amount: 3500, description: 'Maintenance Fee - A-101', unitNumber: 'A-101', loggedBy: admin._id },
-      { transactionType: 'INFLOW', category: 'MAINTENANCE_DUE', amount: 3500, description: 'Maintenance Fee - A-102', unitNumber: 'A-102', loggedBy: admin._id },
-      { transactionType: 'INFLOW', category: 'MAINTENANCE_DUE', amount: 3500, description: 'Maintenance Fee - B-201', unitNumber: 'B-201', loggedBy: admin._id },
-      { transactionType: 'INFLOW', category: 'CORPUS_FUND', amount: 50000, description: 'Builder corpus fund deposit for Silver Oak Heights', loggedBy: admin._id },
-      { transactionType: 'OUTFLOW', category: 'SECURITY', amount: 15000, description: 'Monthly security agency salary', loggedBy: admin._id, vendorName: 'SecureCorp India' },
-      { transactionType: 'OUTFLOW', category: 'WATER', amount: 14500, description: 'Emergency water tankers (3 loads) due to main motor breakdown', loggedBy: admin._id, vendorName: 'Cauvery Water Supply' },
-      { transactionType: 'OUTFLOW', category: 'ELECTRICITY', amount: 12000, description: 'Common area electricity bill - August', loggedBy: admin._id },
-      { transactionType: 'OUTFLOW', category: 'REPAIRS', amount: 8000, description: 'Elevator annual maintenance contract', loggedBy: admin._id, vendorName: 'Otis Elevators' },
-      { transactionType: 'OUTFLOW', category: 'GARDENING', amount: 3000, description: 'Monthly garden maintenance and landscaping', loggedBy: admin._id, vendorName: 'Green Thumbs' },
-      { transactionType: 'OUTFLOW', category: 'EVENTS', amount: 10000, description: 'Independence Day celebration expenses', loggedBy: admin._id }
+      // Long-term Reserves (Past Inflows)
+      { transactionType: 'INFLOW', category: 'CORPUS_FUND', amount: 350000, description: 'Builder Reserve Corpus Fund Deposit - Silver Oak Heights', loggedBy: admin._id, date: sixtyDaysAgo },
+      { transactionType: 'INFLOW', category: 'SINKING_FUND', amount: 75000, description: 'Society Sinking Fund Reserve Allocation', loggedBy: admin._id, date: thirtyDaysAgo },
+      
+      // Current Month Inflows (Maintenance collections & facility rentals)
+      { transactionType: 'INFLOW', category: 'MAINTENANCE_DUE', amount: 3500, description: 'Maintenance Fee - A-101', unitNumber: 'A-101', loggedBy: admin._id, date: thisMonth },
+      { transactionType: 'INFLOW', category: 'MAINTENANCE_DUE', amount: 3500, description: 'Maintenance Fee - A-102', unitNumber: 'A-102', loggedBy: admin._id, date: thisMonth },
+      { transactionType: 'INFLOW', category: 'MAINTENANCE_DUE', amount: 3500, description: 'Maintenance Fee - A-103', unitNumber: 'A-103', loggedBy: admin._id, date: thisMonth },
+      { transactionType: 'INFLOW', category: 'MAINTENANCE_DUE', amount: 3500, description: 'Maintenance Fee - A-104', unitNumber: 'A-104', loggedBy: admin._id, date: thisMonth },
+      { transactionType: 'INFLOW', category: 'MAINTENANCE_DUE', amount: 3500, description: 'Maintenance Fee - A-201', unitNumber: 'A-201', loggedBy: admin._id, date: thisMonth },
+      { transactionType: 'INFLOW', category: 'MAINTENANCE_DUE', amount: 3500, description: 'Maintenance Fee - A-202', unitNumber: 'A-202', loggedBy: admin._id, date: thisMonth },
+      { transactionType: 'INFLOW', category: 'MAINTENANCE_DUE', amount: 3500, description: 'Maintenance Fee - A-203', unitNumber: 'A-203', loggedBy: admin._id, date: thisMonth },
+      { transactionType: 'INFLOW', category: 'MAINTENANCE_DUE', amount: 3500, description: 'Maintenance Fee - B-101', unitNumber: 'B-101', loggedBy: admin._id, date: thisMonth },
+      { transactionType: 'INFLOW', category: 'MAINTENANCE_DUE', amount: 3500, description: 'Maintenance Fee - B-102', unitNumber: 'B-102', loggedBy: admin._id, date: thisMonth },
+      { transactionType: 'INFLOW', category: 'MAINTENANCE_DUE', amount: 3500, description: 'Maintenance Fee - B-103', unitNumber: 'B-103', loggedBy: admin._id, date: thisMonth },
+      { transactionType: 'INFLOW', category: 'MAINTENANCE_DUE', amount: 3500, description: 'Maintenance Fee - B-104', unitNumber: 'B-104', loggedBy: admin._id, date: thisMonth },
+      { transactionType: 'INFLOW', category: 'MAINTENANCE_DUE', amount: 3500, description: 'Maintenance Fee - B-201', unitNumber: 'B-201', loggedBy: admin._id, date: thisMonth },
+      { transactionType: 'INFLOW', category: 'MAINTENANCE_DUE', amount: 3500, description: 'Maintenance Fee - B-202', unitNumber: 'B-202', loggedBy: admin._id, date: thisMonth },
+      { transactionType: 'INFLOW', category: 'MAINTENANCE_DUE', amount: 3500, description: 'Maintenance Fee - B-203', unitNumber: 'B-203', loggedBy: admin._id, date: thisMonth },
+      { transactionType: 'INFLOW', category: 'FACILITY_BOOKING', amount: 12000, description: 'Clubhouse & Party Hall Booking - Resident Event', loggedBy: admin._id, date: thisMonth },
+      { transactionType: 'INFLOW', category: 'FACILITY_BOOKING', amount: 6500, description: 'Sports Complex & Gym Guest Pass Collections', loggedBy: admin._id, date: thisMonth },
+
+      // Current Month Outflows (Standard monthly society operations)
+      { transactionType: 'OUTFLOW', category: 'SECURITY', amount: 15000, description: 'Monthly security agency payroll (Day & Night guards)', loggedBy: admin._id, vendorName: 'SecureCorp India', date: thisMonth },
+      { transactionType: 'OUTFLOW', category: 'ELECTRICITY', amount: 11000, description: 'Common area electricity & lift power bill', loggedBy: admin._id, date: thisMonth },
+      { transactionType: 'OUTFLOW', category: 'WATER', amount: 8500, description: 'Cauvery water supply & central RO maintenance', loggedBy: admin._id, vendorName: 'Cauvery Water Supply', date: thisMonth },
+      { transactionType: 'OUTFLOW', category: 'REPAIRS', amount: 6500, description: 'Otis elevator quarterly AMC & safety check', loggedBy: admin._id, vendorName: 'Otis Elevators', date: thisMonth },
+      { transactionType: 'OUTFLOW', category: 'HOUSEKEEPING', amount: 7500, description: 'Daily sanitization, floor cleaning & waste disposal', loggedBy: admin._id, vendorName: 'CleanHome Services', date: thisMonth },
+      { transactionType: 'OUTFLOW', category: 'GARDENING', amount: 3500, description: 'Lawn trimming, plant nutrition & landscaping', loggedBy: admin._id, vendorName: 'Green Thumbs', date: thisMonth }
     ]);
 
     console.log('Seeding Visitor Passes...');

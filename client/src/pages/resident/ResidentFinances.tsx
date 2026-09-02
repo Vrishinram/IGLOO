@@ -119,7 +119,7 @@ const ResidentFinances = () => {
         <div className="card p-6 space-y-6 bg-white border-slate-200 shadow-sm">
           <h2 className="text-lg font-extrabold text-slate-900">Society Treasury Overview</h2>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
               <p className="text-xs text-slate-600 font-bold mb-1">Reserve Balance</p>
               <p className="text-xl font-black text-slate-900">₹{summary?.totalBalance.toLocaleString()}</p>
@@ -127,6 +127,12 @@ const ResidentFinances = () => {
             <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
               <p className="text-xs text-emerald-700 font-bold mb-1">Monthly Inflow</p>
               <p className="text-xl font-black text-emerald-700">₹{summary?.monthlyInflow.toLocaleString()}</p>
+            </div>
+            <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-300">
+              <p className="text-xs text-emerald-800 font-bold mb-1">Monthly Surplus</p>
+              <p className="text-xl font-black text-emerald-800">
+                +₹{summary ? Math.max(0, summary.monthlyInflow - summary.monthlyOutflow).toLocaleString() : '0'}
+              </p>
             </div>
           </div>
 
