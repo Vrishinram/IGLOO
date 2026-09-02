@@ -43,7 +43,11 @@ const ResidentVisitors = () => {
     e.preventDefault();
     setCreateLoading(true);
     try {
-      const res = await createVisitorPass(formData as any);
+      const payload = {
+        ...formData,
+        unitNumber: user?.unitNumber || (user as any)?.unit || 'A-102'
+      };
+      const res = await createVisitorPass(payload as any);
       setNewPass(res.data.pass);
       setPasses([res.data.pass, ...passes]);
       setIsModalOpen(false);
@@ -55,9 +59,9 @@ const ResidentVisitors = () => {
         vehicleNumber: '',
         expectedDate: new Date().toISOString().split('T')[0]
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Failed to create pass");
+      alert(err.response?.data?.message || "Failed to create pass");
     } finally {
       setCreateLoading(false);
     }

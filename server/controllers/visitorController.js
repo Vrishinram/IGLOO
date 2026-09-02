@@ -34,8 +34,14 @@ const createPass = async (req, res, next) => {
       }
     }
 
-    const randomCode = Math.floor(1000 + Math.random() * 9000);
-    const passCode = `IG-${randomCode}`;
+    // Ensure unique passCode
+    let passCode = '';
+    let exists = true;
+    while (exists) {
+      const randomCode = Math.floor(1000 + Math.random() * 9000);
+      passCode = `IG-${randomCode}`;
+      exists = await VisitorPass.exists({ passCode });
+    }
     
     const pass = new VisitorPass({
       passCode,
@@ -58,13 +64,62 @@ const createPass = async (req, res, next) => {
 const verifyCode = async (req, res, next) => {
   try {
     const { code, phone } = req.body;
-    let query = {};
-    if (code) query.passCode = code;
-    else if (phone) query.visitorPhone = phone;
-    else return res.status(400).json({ success: false, message: 'Provide code or phone' });
-    
-    const pass = await VisitorPass.findOne(query).populate('hostUserId', 'name unitNumber');
-    if (!pass) return res.status(404).json({ success: false, message: 'Pass not found' });
+    if (!code && !phone) {
+      return res.status(400).json({ success: false, message: 'Please provide a pass code, phone number, or unit number.' });
+    }
+
+    const inputRaw = (code || phone || '').toString().trim();
+    if (!inputRaw) {
+      return res.status(400).json({ success: false, message: 'Please provide a pass code or phone number.' });
+    }
+
+    const cleanInput = inputRaw.toUpperCase().replace(/\s+/g, '');
+    const cleanDigits = inputRaw.replace(/\D/g, ''); // only numbers
+
+    // Assemble passCode match variations (e.g. 7824, IG-7824, IG7824, ig-7824)
+    const passCodeCandidates = new Set([
+      inputRaw.toUpperCase(),
+      cleanInput,
+      cleanInput.startsWith('IG-') ? cleanInput : `IG-${cleanInput.replace(/^IG-?/, '')}`
+    ]);
+    if (cleanDigits) {
+      passCodeCandidates.add(`IG-${cleanDigits}`);
+      passCodeCandidates.add(cleanDigits);
+    }
+
+    // Build flexible search criteria:
+    // 1. Pass code match
+    // 2. Exact phone match
+    const orConditions = [
+      { passCode: { $in: Array.from(passCodeCandidates) } },
+      { visitorPhone: cleanInput }
+    ];
+
+    if (cleanDigits && cleanDigits.length >= 4) {
+      orConditions.push({ visitorPhone: cleanDigits });
+      orConditions.push({ visitorPhone: { $regex: cleanDigits, $options: 'i' } });
+    }
+
+    // 3. Unit number match (e.g. A-101, B-201, A101)
+    const unitMatch = cleanInput.match(/^([AB])-?(\d{3})$/);
+    if (unitMatch) {
+      const formattedUnit = `${unitMatch[1]}-${unitMatch[2]}`;
+      orConditions.push({ 
+        unitNumber: formattedUnit, 
+        status: { $in: ['PRE_APPROVED', 'INSIDE'] } 
+      });
+    }
+
+    const pass = await VisitorPass.findOne({ $or: orConditions })
+      .sort({ createdAt: -1 })
+      .populate('hostUserId', 'name unitNumber phone');
+
+    if (!pass) {
+      return res.status(404).json({ 
+        success: false, 
+        message: `No visitor pass found matching "${inputRaw}". Please verify the pass code or visitor phone number.` 
+      });
+    }
     
     res.json({ success: true, pass });
   } catch (err) {
