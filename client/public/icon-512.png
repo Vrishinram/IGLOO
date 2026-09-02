@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="80" fill="#0f172a"/>
+  <g transform="translate(256,256)">
+    <!-- Igloo dome -->
+    <path d="M-130,40 A145,145 0 0,1 130,40 L130,40 L-130,40 Z" fill="#059669" opacity="0.9"/>
+    <!-- Igloo body arc lines -->
+    <path d="M-118,25 A130,120 0 0,1 118,25" fill="none" stroke="#0f172a" stroke-width="8"/>
+    <path d="M-100,-15 A110,105 0 0,1 100,-15" fill="none" stroke="#0f172a" stroke-width="8"/>
+    <path d="M-70,-50 A80,80 0 0,1 70,-50" fill="none" stroke="#0f172a" stroke-width="8"/>
+    <!-- Door -->
+    <rect x="-32" y="-5" width="64" height="46" rx="32" fill="#0f172a"/>
+    <rect x="-24" y="3" width="48" height="38" rx="24" fill="#10b981"/>
+    <!-- Base line -->
+    <line x1="-145" y1="40" x2="145" y2="40" stroke="#059669" stroke-width="10" stroke-linecap="round"/>
+    <!-- Snowflake accents -->
+    <circle cx="80" cy="-90" r="8" fill="#34d399" opacity="0.7"/>
+    <circle cx="-90" cy="-65" r="5" fill="#34d399" opacity="0.5"/>
+    <circle cx="40" cy="-120" r="6.5" fill="#34d399" opacity="0.6"/>
+    <circle cx="-50" cy="-100" r="4" fill="#34d399" opacity="0.4"/>
+  </g>
+</svg>
