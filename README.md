@@ -8,14 +8,13 @@ A modern **Progressive Web App (PWA)** for housing society management, featuring
 
 ## 👥 Team AURA
 
-| Member | Role / Focus | Profile / Affiliation |
+| Member | Role / Focus | Profile |
 | :--- | :--- | :--- |
 | **Vrishin Ram** (Lead) | Security Analyst & Team Lead | [@Vrishinram](https://github.com/Vrishinram) |
 | **Arikaran P** (TinFox213) | Fullstack & Core Developer | [@TinFox213](https://github.com/TinFox213) |
 | **Siva Shankar** | UI/UX Designer | [@SIVASHANKAR-CODE](https://github.com/SIVASHANKAR-CODE) |
 | **Vaishnavi Ganesan** | Domain Researcher | [@vaishnaviganesan2006-hue](https://github.com/vaishnaviganesan2006-hue) |
 | **Yogendra Sai** | Application Tester & QA | [@yogendrasai19-del](https://github.com/yogendrasai19-del) |
-| **Antigravity** | AI Pair Programmer & DevOps / Cloud Architect | [Google DeepMind](https://deepmind.google/) |
 
 ---
 
