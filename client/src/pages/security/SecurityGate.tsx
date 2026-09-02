@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { verifyVisitorCode, checkInVisitor } from '../../services/api';
+import { verifyVisitorCode, checkInVisitor, checkOutVisitor } from '../../services/api';
 import { VisitorPass } from '../../types';
-import { Shield, Search, Loader2, CheckCircle2, XCircle, ArrowRight, UserPlus } from 'lucide-react';
+import { Shield, Search, Loader2, CheckCircle2, XCircle, ArrowRight, UserPlus, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const SecurityGate = () => {
@@ -10,6 +10,7 @@ const SecurityGate = () => {
   const [result, setResult] = useState<VisitorPass | null>(null);
   const [error, setError] = useState('');
   const [checkInLoading, setCheckInLoading] = useState(false);
+  const [checkOutLoading, setCheckOutLoading] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -38,19 +39,36 @@ const SecurityGate = () => {
     setCheckInLoading(true);
     try {
       await checkInVisitor(result._id);
-      // Update local state to show it's checked in
       setResult({ ...result, status: 'INSIDE', checkInTime: new Date().toISOString() });
       setTimeout(() => {
-        // Reset after 3 seconds
         setResult(null);
         setCode('');
         inputRef.current?.focus();
       }, 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('Failed to check in');
+      alert(err.response?.data?.message || 'Failed to check in');
     } finally {
       setCheckInLoading(false);
+    }
+  };
+
+  const handleCheckOut = async () => {
+    if (!result) return;
+    setCheckOutLoading(true);
+    try {
+      await checkOutVisitor(result._id);
+      setResult({ ...result, status: 'COMPLETED', checkOutTime: new Date().toISOString() });
+      setTimeout(() => {
+        setResult(null);
+        setCode('');
+        inputRef.current?.focus();
+      }, 3000);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Failed to check out');
+    } finally {
+      setCheckOutLoading(false);
     }
   };
 
@@ -134,8 +152,33 @@ const SecurityGate = () => {
           )}
 
           {result.status === 'INSIDE' && (
-            <div className="py-4 bg-amber-100 text-amber-700 font-extrabold rounded-xl flex items-center justify-center gap-2 border border-amber-200">
-              <CheckCircle2 className="w-6 h-6" /> Visitor is already inside
+            <div className="space-y-4">
+              <div className="py-3 px-4 bg-amber-100 text-amber-900 font-bold rounded-xl flex items-center justify-between border border-amber-200">
+                <span className="flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-amber-600" />
+                  Visitor Inside Campus:
+                </span>
+                <span className="font-extrabold text-amber-950">
+                  Entered at {result.checkInTime ? new Date(result.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Earlier'}
+                </span>
+              </div>
+              <button 
+                onClick={handleCheckOut}
+                disabled={checkOutLoading}
+                className="w-full py-5 bg-slate-900 hover:bg-slate-800 text-white text-xl font-black rounded-xl transition-all hover:scale-[1.02] active:scale-95 flex justify-center items-center gap-3 shadow-md"
+              >
+                {checkOutLoading ? <Loader2 className="w-8 h-8 animate-spin" /> : <>🚪 ALLOW EXIT (CHECK OUT)</>}
+              </button>
+            </div>
+          )}
+
+          {result.status === 'COMPLETED' && (
+            <div className="py-6 bg-slate-100 text-slate-800 font-extrabold rounded-xl border border-slate-200 space-y-2">
+              <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto" />
+              <p className="text-2xl font-black text-slate-900">VISITOR CHECKED OUT ✅</p>
+              <p className="text-sm font-medium text-slate-500">
+                Exit recorded at {result.checkOutTime ? new Date(result.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString()}
+              </p>
             </div>
           )}
         </div>

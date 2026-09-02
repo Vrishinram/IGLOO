@@ -29,13 +29,18 @@ const SecurityLiveLog = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const [checkingOutId, setCheckingOutId] = useState<string | null>(null);
+
   const handleCheckOut = async (id: string) => {
+    setCheckingOutId(id);
     try {
       await checkOutVisitor(id);
-      fetchData();
-    } catch (err) {
+      await fetchData();
+    } catch (err: any) {
       console.error(err);
-      alert('Failed to check out');
+      alert(err.response?.data?.message || 'Failed to check out');
+    } finally {
+      setCheckingOutId(null);
     }
   };
 
@@ -50,7 +55,7 @@ const SecurityLiveLog = () => {
   };
 
   const inside = passes.filter(p => p.status === 'INSIDE');
-  const completedToday = passes.filter(p => p.status === 'COMPLETED' && new Date(p.checkOutTime!).toDateString() === new Date().toDateString());
+  const completedToday = passes.filter(p => p.status === 'COMPLETED' && p.checkOutTime && new Date(p.checkOutTime).toDateString() === new Date().toDateString());
 
   return (
     <div className="space-y-6">
@@ -118,9 +123,14 @@ const SecurityLiveLog = () => {
                     <td className="p-4 text-right">
                       <button 
                         onClick={() => handleCheckOut(pass._id)}
-                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors inline-flex items-center gap-2"
+                        disabled={checkingOutId === pass._id}
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors inline-flex items-center gap-2 disabled:opacity-50"
                       >
-                        Check Out <LogOut className="w-4 h-4" />
+                        {checkingOutId === pass._id ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-slate-600" />
+                        ) : (
+                          <>Check Out <LogOut className="w-4 h-4" /></>
+                        )}
                       </button>
                     </td>
                   </tr>
