@@ -1,4 +1,4 @@
-# GLUE 🚀
+# IGLOO 🚀
 
 > **Hackathon Project by Team AURA**
 
