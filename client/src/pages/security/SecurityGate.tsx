@@ -20,10 +20,14 @@ const SecurityGate = () => {
 
   useEffect(() => {
     loadExpectedPasses();
+    const timer = setInterval(() => {
+      loadExpectedPasses(true);
+    }, 4000);
+    return () => clearInterval(timer);
   }, []);
 
-  const loadExpectedPasses = async () => {
-    setExpectedLoading(true);
+  const loadExpectedPasses = async (isSilent = false) => {
+    if (!isSilent) setExpectedLoading(true);
     try {
       const res = await getVisitorPasses();
       const preApproved = (res.data.passes || []).filter(p => p.status === 'PRE_APPROVED');
@@ -31,7 +35,7 @@ const SecurityGate = () => {
     } catch (err) {
       console.error('Failed to load expected visitor passes', err);
     } finally {
-      setExpectedLoading(false);
+      if (!isSilent) setExpectedLoading(false);
     }
   };
 

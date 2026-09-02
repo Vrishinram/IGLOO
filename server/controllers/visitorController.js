@@ -110,6 +110,22 @@ const verifyCode = async (req, res, next) => {
       });
     }
 
+    // 4. Plain flat number without block (e.g. 101, 102, 201)
+    const flatNumOnly = cleanInput.match(/^\d{3}$/);
+    if (flatNumOnly) {
+      orConditions.push({ 
+        unitNumber: { $regex: flatNumOnly[0], $options: 'i' },
+        status: { $in: ['PRE_APPROVED', 'INSIDE'] }
+      });
+    }
+
+    // 5. Visitor Name match (case-insensitive)
+    if (inputRaw.length >= 3) {
+      orConditions.push({ 
+        visitorName: { $regex: inputRaw, $options: 'i' } 
+      });
+    }
+
     const pass = await VisitorPass.findOne({ $or: orConditions })
       .sort({ createdAt: -1 })
       .populate('hostUserId', 'name unitNumber phone');
