@@ -40,7 +40,15 @@ export const getTreasurySummary = () => api.get<{success: boolean; totalBalance:
 export const getTransactions = () => api.get<{success: boolean; transactions: TreasuryTransaction[]}>('/treasury/transactions');
 export const createTransaction = (data: Partial<TreasuryTransaction>) => api.post<{success: boolean; transaction: TreasuryTransaction}>('/treasury/transactions', data);
 export const raiseFund = (data: { targetType: string, amount: number, description: string }) => api.post('/treasury/raise-fund', data);
-export const getUnitLedger = (unitNumber: string) => api.get<{success: boolean; charges: any[] }>(`/treasury/unit-ledger/${unitNumber}`);
+export const getUnitLedger = (unitNumber: string) => api.get<{
+  success: boolean; 
+  unit: any; 
+  resident: any; 
+  charges: any[]; 
+  payments: any[]; 
+  pendingItems: any[]; 
+  totalPendingAmount: number;
+}>(`/treasury/unit-ledger/${unitNumber}`);
 export const payDues = (unitNumber: string, amount: number) => api.post<{success: boolean}>('/treasury/pay-dues', { unitNumber, amount });
 export const getUnitStatus = () => api.get<{success: boolean; units: Unit[]}>('/treasury/unit-status');
 

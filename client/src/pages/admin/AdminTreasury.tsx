@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { getTreasurySummary, getTransactions, createTransaction, getUnitStatus, auditFinances } from '../../services/api';
+import { getTreasurySummary, getTransactions, createTransaction, getUnitStatus, auditFinances, getUnitLedger, payDues } from '../../services/api';
 import { TreasurySummary, TreasuryTransaction, Unit } from '../../types';
-import { Wallet, TrendingUp, TrendingDown, Sparkles, Plus, Loader2, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Wallet, TrendingUp, TrendingDown, Sparkles, Plus, Loader2, ArrowUpRight, ArrowDownRight, User, Phone, Mail, CheckCircle2, Clock, AlertCircle, FileText, ArrowRight, Check, X } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const AdminTreasury = () => {
@@ -29,10 +29,11 @@ const AdminTreasury = () => {
   const [fundDesc, setFundDesc] = useState('');
   const [fundLoading, setFundLoading] = useState(false);
 
-  // Unit Ledger State
+  // Unit Ledger & Detail Modal State
   const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
-  const [unitLedger, setUnitLedger] = useState<any[]>([]);
+  const [unitDetails, setUnitDetails] = useState<any | null>(null);
   const [ledgerLoading, setLedgerLoading] = useState(false);
+  const [markingPaid, setMarkingPaid] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -152,15 +153,33 @@ const AdminTreasury = () => {
   const handleUnitClick = async (unitNumber: string) => {
     setSelectedUnit(unitNumber);
     setLedgerLoading(true);
+    setUnitDetails(null);
     try {
-      const { getUnitLedger } = await import('../../services/api');
       const res = await getUnitLedger(unitNumber);
-      setUnitLedger(res.data.charges || []);
+      setUnitDetails(res.data);
     } catch(err) {
       console.error(err);
-      alert('Failed to load ledger');
+      alert('Failed to load unit fee details');
     } finally {
       setLedgerLoading(false);
+    }
+  };
+
+  const handleMarkPaid = async (unitNumber: string, amount: number) => {
+    if (!confirm(`Confirm marking ₹${amount.toLocaleString()} dues for Unit ${unitNumber} as PAID? This will record an inflow transaction in the society treasury.`)) return;
+    setMarkingPaid(true);
+    try {
+      const { payDues } = await import('../../services/api');
+      await payDues(unitNumber, amount);
+      alert(`Dues for Unit ${unitNumber} marked as PAID!`);
+      await fetchData();
+      const res = await getUnitLedger(unitNumber);
+      setUnitDetails(res.data);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message || err.message || 'Failed to update payment');
+    } finally {
+      setMarkingPaid(false);
     }
   };
 
@@ -296,38 +315,67 @@ const AdminTreasury = () => {
 
         {/* Dues Compliance */}
         <div className="card p-0 flex flex-col overflow-hidden bg-white border-slate-200 shadow-sm">
-          <div className="p-4 border-b border-slate-200 bg-slate-50">
-            <h2 className="text-lg font-extrabold text-slate-900">Unit Fee Compliance</h2>
+          <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+            <div>
+              <h2 className="text-lg font-extrabold text-slate-900">Unit Fee Compliance</h2>
+              <p className="text-xs text-slate-500 font-medium">Click any row to inspect itemized dues & payment history</p>
+            </div>
+            <span className="text-xs font-bold px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full border border-amber-200">
+              {units.filter(u => u.currentDueStatus !== 'PAID').length} Pending
+            </span>
           </div>
-          <div className="overflow-y-auto max-h-[300px]">
+          <div className="overflow-y-auto max-h-[320px]">
             <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-500 sticky top-0">
+              <thead className="bg-slate-50 text-slate-500 sticky top-0 border-b border-slate-200">
                 <tr>
                   <th className="p-3 font-bold">Unit</th>
-                  <th className="p-3 font-bold">Owner</th>
-                  <th className="p-3 font-bold text-right">Status</th>
+                  <th className="p-3 font-bold">Resident / Owner</th>
+                  <th className="p-3 font-bold">Pending Due</th>
+                  <th className="p-3 font-bold text-center">Status</th>
+                  <th className="p-3 font-bold text-right">Details</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {units.map(u => (
-                  <tr 
-                    key={u._id} 
-                    className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
-                    onClick={() => handleUnitClick(u.unitNumber)}
-                  >
-                    <td className="py-3 font-bold text-slate-900">{u.unitNumber}</td>
-                    <td className="py-3 text-sm text-slate-600">{u.ownerName}</td>
-                    <td className="py-3 text-right">
-                      <span className={`text-xs font-bold px-2 py-1 rounded ${
-                        u.currentDueStatus === 'PAID' ? 'bg-emerald-100 text-emerald-700' :
-                        u.currentDueStatus === 'PENDING' ? 'bg-amber-100 text-amber-700' :
-                        'bg-red-100 text-red-700'
-                      }`}>
-                        {u.currentDueStatus}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {units.map(u => {
+                  const isPending = u.currentDueStatus !== 'PAID';
+                  const pendingFee = isPending ? (u.monthlyMaintenanceFee || 3500) : 0;
+                  return (
+                    <tr 
+                      key={u._id} 
+                      className="border-b border-slate-100 hover:bg-slate-50/80 transition-colors cursor-pointer group"
+                      onClick={() => handleUnitClick(u.unitNumber)}
+                    >
+                      <td className="p-3 font-extrabold text-slate-900 flex items-center gap-1.5">
+                        <span className={`w-2 h-2 rounded-full ${isPending ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
+                        {u.unitNumber}
+                      </td>
+                      <td className="p-3 text-sm text-slate-700 font-medium">{u.ownerName}</td>
+                      <td className="p-3 font-bold">
+                        {isPending ? (
+                          <span className="text-amber-800 font-extrabold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                            ₹{pendingFee.toLocaleString()}
+                          </span>
+                        ) : (
+                          <span className="text-emerald-700 font-medium">₹0 (Paid)</span>
+                        )}
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full inline-flex items-center gap-1 ${
+                          u.currentDueStatus === 'PAID' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
+                          u.currentDueStatus === 'PENDING' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                          'bg-red-100 text-red-800 border border-red-200'
+                        }`}>
+                          {u.currentDueStatus}
+                        </span>
+                      </td>
+                      <td className="p-3 text-right">
+                        <span className="text-xs font-bold text-primary-600 group-hover:text-primary-700 inline-flex items-center gap-1">
+                          View <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -412,40 +460,190 @@ const AdminTreasury = () => {
         </div>
       )}
 
+      {/* Unit Fee Details Modal */}
       {selectedUnit && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] border border-slate-200">
+            {/* Modal Header */}
             <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-              <div>
-                <h2 className="text-xl font-extrabold text-slate-900">Unit Ledger</h2>
-                <p className="text-slate-500 font-medium text-sm">Flat {selectedUnit}</p>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center font-black text-xl border border-primary-200">
+                  {selectedUnit}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-black text-slate-900">Flat {selectedUnit}</h2>
+                    {unitDetails?.unit?.currentDueStatus && (
+                      <span className={`text-xs font-black px-2.5 py-0.5 rounded-full ${
+                        unitDetails.unit.currentDueStatus === 'PAID'
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                          : unitDetails.unit.currentDueStatus === 'PENDING'
+                          ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                          : 'bg-red-100 text-red-800 border border-red-200'
+                      }`}>
+                        {unitDetails.unit.currentDueStatus}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-slate-500 font-medium text-xs mt-0.5">
+                    Block {unitDetails?.unit?.block || selectedUnit.split('-')[0]} • Silver Oak Heights
+                  </p>
+                </div>
               </div>
-              <button onClick={() => setSelectedUnit(null)} className="p-2 text-slate-400 hover:bg-slate-200 rounded-lg">X</button>
+              <button 
+                onClick={() => { setSelectedUnit(null); setUnitDetails(null); }} 
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
             
-            <div className="p-6 overflow-y-auto">
+            <div className="p-6 overflow-y-auto space-y-6">
               {ledgerLoading ? (
-                <div className="text-center py-8"><Loader2 className="w-8 h-8 animate-spin text-primary-500 mx-auto" /></div>
-              ) : unitLedger.length === 0 ? (
-                <div className="text-center py-8 text-slate-500 font-medium">No ledger entries found.</div>
-              ) : (
-                <div className="space-y-3">
-                  {unitLedger.map((l, i) => (
-                    <div key={i} className="flex justify-between items-center p-4 rounded-xl border border-slate-200 bg-white">
-                      <div>
-                        <div className="font-bold text-slate-900">{l.description}</div>
-                        <div className="text-xs text-slate-500 mt-1">{new Date(l.createdAt).toLocaleDateString()}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-black text-slate-900">₹{l.amount.toLocaleString()}</div>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${l.status === 'PAID' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                          {l.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                <div className="text-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary-600 mx-auto mb-2" />
+                  <p className="text-slate-500 font-medium text-sm">Loading flat financial records...</p>
                 </div>
+              ) : (
+                <>
+                  {/* Resident Info Card */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Resident / Owner</p>
+                      <p className="text-base font-extrabold text-slate-900 flex items-center gap-1.5">
+                        <User className="w-4 h-4 text-slate-500" />
+                        {unitDetails?.resident?.name || unitDetails?.unit?.ownerName || 'Unknown Resident'}
+                      </p>
+                      <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+                        <Phone className="w-3.5 h-3.5 text-slate-400" />
+                        {unitDetails?.resident?.phone || 'No phone recorded'}
+                      </p>
+                      <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+                        <Mail className="w-3.5 h-3.5 text-slate-400" />
+                        {unitDetails?.resident?.email || 'No email recorded'}
+                      </p>
+                    </div>
+                    <div className="space-y-1 border-t md:border-t-0 md:border-l border-slate-200 pt-3 md:pt-0 md:pl-4">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fee & Ledger Terms</p>
+                      <p className="text-sm font-bold text-slate-800">
+                        Monthly Maintenance: <span className="font-extrabold text-slate-900">₹{(unitDetails?.unit?.monthlyMaintenanceFee || 3500).toLocaleString()}</span>
+                      </p>
+                      <p className="text-xs text-slate-500 font-medium">
+                        Resident Type: <span className="font-bold text-slate-700">{unitDetails?.resident?.residentType || 'OWNER'}</span>
+                      </p>
+                      <p className="text-xs text-slate-500 font-medium">
+                        Last Payment: <span className="font-bold text-slate-700">
+                          {unitDetails?.unit?.lastPaidDate ? new Date(unitDetails.unit.lastPaidDate).toLocaleDateString() : 'No payment recorded yet'}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* What is Pending? (Itemized Breakdown) */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-amber-600" />
+                        Pending Dues Breakdown
+                      </h3>
+                      {unitDetails?.totalPendingAmount > 0 ? (
+                        <span className="text-sm font-black text-amber-800 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200">
+                          Total Due: ₹{unitDetails.totalPendingAmount.toLocaleString()}
+                        </span>
+                      ) : (
+                        <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> All Cleared
+                        </span>
+                      )}
+                    </div>
+
+                    {unitDetails?.pendingItems && unitDetails.pendingItems.length > 0 ? (
+                      <div className="space-y-2.5">
+                        {unitDetails.pendingItems.map((item: any, idx: number) => (
+                          <div key={idx} className="p-4 rounded-xl border-2 border-amber-200/80 bg-amber-50/40 flex justify-between items-center gap-4">
+                            <div>
+                              <p className="font-extrabold text-slate-900 text-sm">{item.title}</p>
+                              <p className="text-xs text-slate-500 font-medium mt-0.5">{item.description}</p>
+                              <p className="text-[11px] text-amber-800 font-bold mt-1 flex items-center gap-1">
+                                <Clock className="w-3 h-3" /> Due Date: {item.dueDate ? new Date(item.dueDate).toLocaleDateString() : '10th of current month'}
+                              </p>
+                            </div>
+                            <div className="text-right whitespace-nowrap">
+                              <p className="text-lg font-black text-amber-900">₹{item.amount.toLocaleString()}</p>
+                              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 bg-amber-200 text-amber-900 rounded">
+                                {item.status}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/60 text-center">
+                        <CheckCircle2 className="w-6 h-6 text-emerald-600 mx-auto mb-1" />
+                        <p className="font-bold text-emerald-800 text-sm">No Pending Dues!</p>
+                        <p className="text-xs text-emerald-600 font-medium">This flat has cleared all monthly maintenance and society charges.</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Payment History / Receipts */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-blue-600" />
+                      Recorded Payments & Receipts
+                    </h3>
+                    {unitDetails?.payments && unitDetails.payments.length > 0 ? (
+                      <div className="border border-slate-200 rounded-xl overflow-hidden">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
+                            <tr>
+                              <th className="p-2.5 font-bold">Date</th>
+                              <th className="p-2.5 font-bold">Description</th>
+                              <th className="p-2.5 font-bold">Category</th>
+                              <th className="p-2.5 font-bold text-right">Amount</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {unitDetails.payments.map((p: any, idx: number) => (
+                              <tr key={idx} className="hover:bg-slate-50">
+                                <td className="p-2.5 text-slate-600 font-medium">{new Date(p.date || p.createdAt).toLocaleDateString()}</td>
+                                <td className="p-2.5 font-bold text-slate-800">{p.description}</td>
+                                <td className="p-2.5 text-slate-500 font-medium">{p.category}</td>
+                                <td className="p-2.5 text-right font-extrabold text-emerald-600">+₹{p.amount.toLocaleString()}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-400 font-medium py-2">No prior payment receipts on record for this unit.</p>
+                    )}
+                  </div>
+                </>
               )}
+            </div>
+
+            {/* Modal Footer Actions */}
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
+              <div>
+                {unitDetails?.unit?.currentDueStatus !== 'PAID' && (
+                  <button 
+                    onClick={() => handleMarkPaid(selectedUnit, unitDetails?.totalPendingAmount || 3500)}
+                    disabled={markingPaid || ledgerLoading}
+                    className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {markingPaid ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    Mark Dues as Paid (Record Inflow)
+                  </button>
+                )}
+              </div>
+              <button 
+                type="button" 
+                onClick={() => { setSelectedUnit(null); setUnitDetails(null); }} 
+                className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 font-bold text-sm rounded-xl transition-colors shadow-xs"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

@@ -64,13 +64,18 @@ const createTransaction = async (req, res, next) => {
 
 const payDues = async (req, res, next) => {
   try {
-    const unit = await Unit.findOne({ unitNumber: req.user.unitNumber });
+    const targetUnit = req.body.unitNumber || req.user.unitNumber;
+    if (!targetUnit) return res.status(400).json({ success: false, message: 'Unit number is required' });
+
+    const unit = await Unit.findOne({ unitNumber: targetUnit });
     if (!unit) return res.status(404).json({ success: false, message: 'Unit not found' });
+    
+    const amount = req.body.amount || unit.monthlyMaintenanceFee || 3500;
     
     const tx = new TreasuryTransaction({
       transactionType: 'INFLOW',
       category: 'MAINTENANCE_DUE',
-      amount: unit.monthlyMaintenanceFee,
+      amount,
       description: `Maintenance fee payment for ${unit.unitNumber}`,
       unitNumber: unit.unitNumber,
       loggedBy: req.user.userId
@@ -81,7 +86,7 @@ const payDues = async (req, res, next) => {
     unit.lastPaidDate = new Date();
     await unit.save();
     
-    res.json({ success: true, message: 'Dues paid successfully', transaction: tx, unit });
+    res.json({ success: true, message: `Dues for unit ${unit.unitNumber} marked as paid successfully`, transaction: tx, unit });
   } catch (err) {
     next(err);
   }
@@ -137,8 +142,59 @@ const raiseFund = async (req, res, next) => {
 const getUnitLedger = async (req, res, next) => {
   try {
     const { unitNumber } = req.params;
+    const unit = await Unit.findOne({ unitNumber });
+    if (!unit) return res.status(404).json({ success: false, message: 'Unit not found' });
+
+    const resident = await User.findOne({ unitNumber, role: 'RESIDENT' });
     const charges = await UnitCharge.find({ unitNumber }).sort({ createdAt: -1 });
-    res.json({ success: true, charges });
+    const payments = await TreasuryTransaction.find({ unitNumber, transactionType: 'INFLOW' }).sort({ date: -1 });
+
+    const isPending = unit.currentDueStatus !== 'PAID';
+    const pendingItems = [];
+    if (isPending) {
+      pendingItems.push({
+        title: 'Monthly Maintenance Fee (September 2026)',
+        description: 'Common maintenance, 24/7 security, power backup, lift AMC & water supply',
+        category: 'MAINTENANCE_DUE',
+        amount: unit.monthlyMaintenanceFee || 3500,
+        dueDate: new Date(new Date().getFullYear(), new Date().getMonth(), 10),
+        status: unit.currentDueStatus
+      });
+    }
+
+    // Add any pending UnitCharge items
+    charges.filter(c => c.status === 'PENDING').forEach(c => {
+      pendingItems.push({
+        title: c.description || 'Special Society Levy',
+        description: `Special fund levy allocated to ${c.targetResidentType || 'all'} flats`,
+        category: 'SPECIAL_LEVY',
+        amount: c.amount,
+        dueDate: c.createdAt,
+        status: 'PENDING'
+      });
+    });
+
+    const totalPendingAmount = pendingItems.reduce((acc, item) => acc + item.amount, 0);
+
+    res.json({
+      success: true,
+      unit,
+      resident: resident ? {
+        name: resident.name,
+        email: resident.email,
+        phone: resident.phone,
+        residentType: resident.residentType || 'OWNER'
+      } : {
+        name: unit.ownerName,
+        email: 'N/A',
+        phone: 'N/A',
+        residentType: 'OWNER'
+      },
+      charges,
+      payments,
+      pendingItems,
+      totalPendingAmount
+    });
   } catch (err) {
     next(err);
   }
