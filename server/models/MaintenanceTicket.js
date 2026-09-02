@@ -24,7 +24,7 @@ const maintenanceTicketSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['PLUMBING', 'ELECTRICAL', 'CARPENTRY', 'CIVIL', 'APPLIANCE', 'COMMON_AREA'],
+    enum: ['PLUMBING', 'ELECTRICAL', 'CARPENTRY', 'CIVIL', 'APPLIANCE', 'COMMON_AREA', 'OTHER'],
     required: true,
   },
   priority: {

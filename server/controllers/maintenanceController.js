@@ -21,12 +21,27 @@ const createTicket = async (req, res, next) => {
   try {
     const { unitNumber, title, description, category, priority, issueScope, aiEstimatedCost, aiEstimatedTime, aiTriageAnalysis, photoUrl } = req.body;
     
+    // Resolve target unit: if COMMON, use COMMON, otherwise fallback to resident's unitNumber
+    const targetUnit = issueScope === 'COMMON' ? 'COMMON' : (unitNumber || req.user.unitNumber || 'A-102');
+    
+    // Generate unique human-readable ticket ID (TKT-XXXX)
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    const ticketId = `TKT-${randomNum}`;
+
+    // Normalize and validate category enum
+    let safeCategory = (category || 'OTHER').toUpperCase();
+    const validCategories = ['PLUMBING', 'ELECTRICAL', 'CARPENTRY', 'CIVIL', 'APPLIANCE', 'COMMON_AREA', 'OTHER'];
+    if (!validCategories.includes(safeCategory)) {
+      safeCategory = 'OTHER';
+    }
+
     const ticket = new MaintenanceTicket({
-      unitNumber,
+      ticketId,
+      unitNumber: targetUnit,
       reportedBy: req.user.userId,
       title,
       description,
-      category,
+      category: safeCategory,
       priority: priority || 'MEDIUM',
       issueScope: issueScope || 'PRIVATE',
       aiEstimatedCost,

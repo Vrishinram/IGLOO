@@ -65,6 +65,7 @@ const ResidentMaintenance = () => {
         description,
         category: category || 'OTHER',
         issueScope: issueScope as 'PRIVATE' | 'COMMON',
+        unitNumber: issueScope === 'COMMON' ? 'COMMON' : (user?.unitNumber || 'A-102'),
         priority: (aiResult?.priority as any) || 'LOW',
         aiEstimatedCost: aiResult?.estimatedCost,
         aiEstimatedTime: aiResult?.estimatedTime,
@@ -73,9 +74,9 @@ const ResidentMaintenance = () => {
       setTickets([res.data.ticket, ...tickets]);
       setIsModalOpen(false);
       resetForm();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Failed to create ticket");
+      alert(err.response?.data?.message || err.message || "Failed to create ticket");
     }
   };
 
