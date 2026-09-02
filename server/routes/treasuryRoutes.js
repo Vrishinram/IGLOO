@@ -6,7 +6,7 @@ const { verifyToken, requireRole } = require('../middleware/auth');
 router.get('/summary', verifyToken, requireRole(['ADMIN', 'RESIDENT']), getSummary);
 router.get('/transactions', verifyToken, requireRole(['ADMIN', 'RESIDENT']), getTransactions);
 router.post('/transactions', verifyToken, requireRole(['ADMIN']), createTransaction);
-router.post('/pay-dues', verifyToken, requireRole(['RESIDENT']), payDues);
+router.post('/pay-dues', verifyToken, requireRole(['RESIDENT', 'ADMIN']), payDues);
 router.get('/unit-status', verifyToken, requireRole(['ADMIN', 'RESIDENT', 'SECURITY']), getUnitStatus);
 
 router.post('/raise-fund', verifyToken, requireRole(['ADMIN']), raiseFund);
