@@ -17,9 +17,6 @@ const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 
-// Connect to database
-connectDB();
-
 // Middleware
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
