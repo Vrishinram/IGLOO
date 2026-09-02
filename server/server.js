@@ -27,26 +27,28 @@ app.use(morgan('dev'));
 app.use(express.json());
 
 // Mount routers
-app.use('/api/auth', authRoutes);
-app.use('/api/maintenance', maintenanceRoutes);
-app.use('/api/treasury', treasuryRoutes);
-app.use('/api/visitors', visitorRoutes);
-app.use('/api/ai', aiRoutes);
-app.use('/api/notices', noticeRoutes);
-app.use('/api/emergency', emergencyRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/admin', authRoutes); // reset-database is inside authRoutes
+const mountRoutes = (prefix = '') => {
+  app.use(`${prefix}/auth`, authRoutes);
+  app.use(`${prefix}/maintenance`, maintenanceRoutes);
+  app.use(`${prefix}/treasury`, treasuryRoutes);
+  app.use(`${prefix}/visitors`, visitorRoutes);
+  app.use(`${prefix}/ai`, aiRoutes);
+  app.use(`${prefix}/notices`, noticeRoutes);
+  app.use(`${prefix}/emergency`, emergencyRoutes);
+  app.use(`${prefix}/users`, userRoutes);
+  app.use(`${prefix}/admin`, authRoutes);
+};
 
-// Error handler
-app.use(errorHandler);
+mountRoutes('/api');
+mountRoutes('');
 
-// Serve client static build in production
+// Serve client static build in production (for Render / Docker / local standalone)
 const path = require('path');
 const clientDistPath = path.join(__dirname, '../client/dist');
 app.use(express.static(clientDistPath));
 
 app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api')) {
+  if (req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/maintenance')) {
     return next();
   }
   res.sendFile(path.join(clientDistPath, 'index.html'), (err) => {
@@ -56,20 +58,16 @@ app.get('*', (req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+// Error handler
+app.use(errorHandler);
 
+// Only listen when executed directly (local development or standalone node server)
 if (require.main === module) {
+  const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
     console.log(`Server started on port ${PORT}`);
   });
 }
 
-// Export the express app for Vercel serverless functions
+// Export express app for Vercel serverless functions
 module.exports = app;
-// Only listen when executed directly (local development)
-if (process.env.NODE_ENV !== "production") {
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
-    console.log(`Server running locally on port ${PORT}`);
-  });
-}
