@@ -26,6 +26,17 @@ app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
 
+// Ensure MongoDB is connected before handling any API request
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('Database connection error in request:', err);
+    res.status(500).json({ success: false, message: 'Database connection error: ' + err.message });
+  }
+});
+
 // Mount routers
 const mountRoutes = (prefix = '') => {
   app.use(`${prefix}/auth`, authRoutes);

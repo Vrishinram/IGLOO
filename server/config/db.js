@@ -1,24 +1,34 @@
 const mongoose = require('mongoose');
 
-let isConnected = false;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://aura_admin:AuraGlue2026!@cluster0.pn85vyp.mongodb.net/glue?retryWrites=true&w=majority&appName=Cluster0';
+
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
 
 const connectDB = async () => {
-  if (mongoose.connection.readyState >= 1 || isConnected) {
-    return;
+  if (cached.conn && mongoose.connection.readyState === 1) {
+    return cached.conn;
   }
 
-  if (!process.env.MONGODB_URI) {
-    console.warn('MONGODB_URI environment variable is not defined');
-    return;
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(MONGODB_URI).then((mongooseInstance) => {
+      console.log(`MongoDB Connected to Atlas (${mongooseInstance.connection.host})`);
+      return mongooseInstance;
+    });
   }
 
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI);
-    isConnected = true;
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    cached.conn = await cached.promise;
   } catch (error) {
-    console.error(`Error connecting to MongoDB: ${error.message}`);
+    cached.promise = null;
+    console.error('Error connecting to MongoDB Atlas:', error.message);
+    throw error;
   }
+
+  return cached.conn;
 };
 
 module.exports = connectDB;

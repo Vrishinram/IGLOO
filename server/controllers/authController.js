@@ -1,20 +1,32 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const connectDB = require('../config/db');
 const { seedDatabase } = require('../utils/seedData');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey_igloo_2026_blitz';
 
 const generateToken = (user) => {
   return jwt.sign(
     { userId: user._id, role: user.role, unitNumber: user.unitNumber, name: user.name },
-    process.env.JWT_SECRET,
+    JWT_SECRET,
     { expiresIn: '24h' }
   );
 };
 
 const login = async (req, res, next) => {
   try {
+    await connectDB();
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    let user = await User.findOne({ email });
+    if (!user) {
+      const count = await User.countDocuments();
+      if (count === 0) {
+        await seedDatabase();
+        user = await User.findOne({ email });
+      }
+    }
+
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
@@ -33,13 +45,7 @@ const login = async (req, res, next) => {
 
 const quickDemoLogin = async (req, res, next) => {
   try {
-    if (!process.env.MONGODB_URI) {
-      return res.status(500).json({
-        success: false,
-        message: 'MONGODB_URI is not configured in Vercel environment variables.'
-      });
-    }
-
+    await connectDB();
     const { role, email } = req.body;
     let user;
     if (email) {
