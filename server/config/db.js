@@ -1,6 +1,27 @@
 const mongoose = require('mongoose');
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://aura_admin:AuraGlue2026!@cluster0.pn85vyp.mongodb.net/glue?retryWrites=true&w=majority&appName=Cluster0';
+const FALLBACK_URI = 'mongodb+srv://aura_admin:AuraGlue2026!@cluster0.pn85vyp.mongodb.net/glue?retryWrites=true&w=majority&appName=Cluster0';
+
+function getMongoUri() {
+  let uri = process.env.MONGODB_URI;
+  if (!uri || typeof uri !== 'string') {
+    return FALLBACK_URI;
+  }
+  uri = uri.trim();
+  if (uri.startsWith('MONGODB_URI=')) {
+    uri = uri.slice(12).trim();
+  }
+  if ((uri.startsWith('"') && uri.endsWith('"')) || (uri.startsWith("'") && uri.endsWith("'"))) {
+    uri = uri.slice(1, -1).trim();
+  }
+  if (!uri.startsWith('mongodb://') && !uri.startsWith('mongodb+srv://')) {
+    console.warn('Configured MONGODB_URI has invalid scheme, using working fallback Atlas URI.');
+    return FALLBACK_URI;
+  }
+  return uri;
+}
+
+const MONGODB_URI = getMongoUri();
 
 let cached = global.mongoose;
 
