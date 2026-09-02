@@ -8,15 +8,15 @@
 
 | Member | Role / Focus | GitHub Profile |
 | :--- | :--- | :--- |
-| **Vrishin Ram** (Lead) | Fullstack / Core | [@Vrishinram](https://github.com/Vrishinram) |
-| **TinFox213** | Team Member | [@TinFox213](https://github.com/TinFox213) |
-| **Siva Shankar** | Team Member | [@SIVASHANKAR-CODE](https://github.com/SIVASHANKAR-CODE) |
-| **Vaishnavi Ganesan** | Team Member | [@vaishnaviganesan2006-hue](https://github.com/vaishnaviganesan2006-hue) |
-| **Yogendra Sai** | Team Member | [@yogendrasai19-del](https://github.com/yogendrasai19-del) |
+| **Vrishin Ram** (Lead) | Security Analyst | [@Vrishinram](https://github.com/Vrishinram) |
+| **TinFox213** | Fullstack / Core | [@TinFox213](https://github.com/TinFox213) |
+| **Siva Shankar** | UI/UX Designer | [@SIVASHANKAR-CODE](https://github.com/SIVASHANKAR-CODE) |
+| **Vaishnavi Ganesan** | Researcher | [@vaishnaviganesan2006-hue](https://github.com/vaishnaviganesan2006-hue) |
+| **Yogendra Sai** | Application Tester | [@yogendrasai19-del](https://github.com/yogendrasai19-del) |
 
 ---
 
-## 🎯 About Project GLUE
+## 🎯 About Project IGLOO
 
 *Add your hackathon project problem statement, vision, and core solution here.*
 
