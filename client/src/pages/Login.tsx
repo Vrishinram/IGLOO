@@ -34,7 +34,8 @@ const Login = () => {
       await quickLogin(role, emailStr);
       navigate('/');
     } catch (err: any) {
-      setError('Quick login failed. Ensure database is seeded.');
+      const msg = err.response?.data?.message || err.message || 'Quick login failed. Ensure database is seeded and MONGODB_URI is valid.';
+      setError(msg);
     } finally {
       setLoading(false);
     }

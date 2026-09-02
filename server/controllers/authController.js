@@ -33,6 +33,13 @@ const login = async (req, res, next) => {
 
 const quickDemoLogin = async (req, res, next) => {
   try {
+    if (!process.env.MONGODB_URI) {
+      return res.status(500).json({
+        success: false,
+        message: 'MONGODB_URI is not configured in Vercel environment variables.'
+      });
+    }
+
     const { role, email } = req.body;
     let user;
     if (email) {
@@ -41,8 +48,27 @@ const quickDemoLogin = async (req, res, next) => {
       user = await User.findOne({ isDemoUser: true, role });
     }
     
+    // Auto-seed if database is empty / demo user is not yet created
     if (!user) {
-      return res.status(404).json({ success: false, message: 'Demo user not found' });
+      console.log('Demo user not found. Attempting automatic database seeding...');
+      try {
+        await seedDatabase();
+        if (email) {
+          user = await User.findOne({ isDemoUser: true, email });
+        } else {
+          user = await User.findOne({ isDemoUser: true, role });
+        }
+      } catch (seedErr) {
+        console.error('Auto-seed failed:', seedErr);
+        return res.status(500).json({
+          success: false,
+          message: `Auto-seed failed: ${seedErr.message}. Ensure IP 0.0.0.0/0 is allowed in MongoDB Atlas Network Access.`
+        });
+      }
+    }
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Demo user not found after seeding.' });
     }
     
     const token = generateToken(user);
